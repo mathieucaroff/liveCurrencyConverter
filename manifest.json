@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "YEN to EURO auto converter",
+  "description": "Detect prices in YEN and converts them to EURO by applying the current conversion rate. The rates come from exchangerate-api.com",
+  "version": "1.0",
+  "author": "Mathieu CAROFF",
+  "icons": {
+    "16": "icon/icon-16x16.png",
+    "32": "icon/icon-32x32.png",
+    "48": "icon/icon-48x48.png",
+    "128": "icon/icon-128x128.png"
+  },
+  "permissions": [],
+  "host_permissions": ["*://*/*"],
+  "content_scripts": [
+    {
+      "matches": ["*://*/*"],
+      "js": ["convert.content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "live-currency-converter@oxie.cc"
+    }
+  }
+}
