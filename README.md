@@ -7,6 +7,10 @@ This extension automatically detects prices expressed in YEN (¥, YEN, JPY)
 on any webpage and converts them to EURO using the current exchange rate
 from exchangerate-api.com.
 
+![Screenshot Kayak](./screeshot/LCCKayak.png)
+
+![Screenshot Agoda](./screeshot/LCCAgoda.png)
+
 ## Bugs and Feature Requests
 
 Report issues at https://github.com/mathieucaroff/liveCurrencyConverter/issues
