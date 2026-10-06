@@ -4,7 +4,7 @@
 // @name         YenToEuroAutoConverter
 // @namespace    http://tampermonkey.net/
 // @version      2025-08-27
-// @description  Convert Yen values to Euro
+// @description  Convert Japanese Yen and Thai Baht (THB) values to Euro
 // @author       Mathieu CAROFF
 // @match        *://*/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=agoda.com
@@ -14,66 +14,91 @@
 (function () {
   "use strict";
 
-  const defaultYenToEuroConversionRate = 0.00577;
-  var yenToEuroConversionRate = 0;
+  const currencies = [
+    {
+      code: "JPY",
+      pattern: "¥|YEN|JPY",
+      cacheKey: "yenUserscript",
+      defaultRate: 0.00577,
+      rate: 0,
+    },
+    {
+      code: "THB",
+      pattern: "\\u0E3F|BAHT|THB",
+      cacheKey: "bahtUserscript",
+      defaultRate: 0.026,
+      rate: 0,
+    },
+  ];
 
   function findAndConvert() {
-    if (!yenToEuroConversionRate) return;
+    for (const currency of currencies) {
+      if (!currency.rate) continue;
+      const currencyPattern = new RegExp(`(${currency.pattern})`, "i");
+      const prefixTextPattern = new RegExp(
+        `(${currency.pattern})[\\s\\u202F\\u00A0]*[^\\s\\u202F\\u00A0]`,
+        "i",
+      );
+      const prefixValuePattern = new RegExp(
+        `(${currency.pattern})[\\s\\u202F\\u00A0]*(\\d[\\d\\s,]*(\\.\\d+)?)`,
+        "i",
+      );
+      const suffixTextPattern = new RegExp(
+        `[^\\s\\u202F\\u00A0][\\s\\u202F\\u00A0]*(${currency.pattern})`,
+        "i",
+      );
+      const suffixValuePattern = new RegExp(
+        `(\\d[\\d\\s,]*(\\.\\d+)?)[\\s\\u202F\\u00A0]*(${currency.pattern})`,
+        "i",
+      );
 
-    visitAllTextNodes(document.body, (textNode) => {
-      if ((textNode.nodeValue ?? "").match(/¥|\bYEN\b|\bJPY\b/i)) {
-        if (textNode.parentElement?.tagName === "SCRIPT") return;
-        if (markNode(textNode)) return;
-        walkSidewayAndUpUntil(textNode, {
-          right: (nodeList) => {
-            var text = nodeList.map((node) => node.textContent).join("");
-            var textMatch = text.match(
-              /(¥|\bYEN|\bJPY)[\s\u202F\u00A0]*[^\s\u202F\u00A0]/i
-            );
-            var yenMatch = text.match(
-              /(¥|\bYEN|\bJPY)[\s\u202F\u00A0]*(\d[\d\s,]*(\.\d+)?)/i
-            );
-            if (yenMatch) {
-              var yenValue = Number(yenMatch[2].replace(/[\s,]/g, ""));
-              var euroValue = yenValue * yenToEuroConversionRate;
-              var euroString = euroValue.toLocaleString("de-DE", {
-                style: "currency",
-                currency: "EUR",
-                maximumFractionDigits: 2,
-              });
-              textNode.nodeValue = `(${euroString}) ${textNode.nodeValue}`;
-            }
-            return {
-              found: !!yenMatch,
-              keepGoing: !textMatch && !yenMatch,
-            };
-          },
-          left: (nodeList) => {
-            var text = nodeList.map((node) => node.textContent).join("");
-            var textMatch = text.match(
-              /[^\s\u202F\u00A0][\s\u202F\u00A0]*(¥|YEN\b|JPY\b)/i
-            );
-            var yenMatch = text.match(
-              /(\d[\d\s,]*(\.\d+)?)[\s\u202F\u00A0]*(¥|YEN\b|JPY\b)/i
-            );
-            if (yenMatch) {
-              var yenValue = Number(yenMatch[1].replace(/[\s,]/g, ""));
-              var euroValue = yenValue * yenToEuroConversionRate;
-              var euroString = euroValue.toLocaleString("de-DE", {
-                style: "currency",
-                currency: "EUR",
-                maximumFractionDigits: 2,
-              });
-              textNode.nodeValue = `${textNode.nodeValue} (${euroString})`;
-            }
-            return {
-              found: !!yenMatch,
-              keepGoing: !textMatch && !yenMatch,
-            };
-          },
-        });
-      }
-    });
+      visitAllTextNodes(document.body, (textNode) => {
+        if ((textNode.nodeValue ?? "").match(currencyPattern)) {
+          if (textNode.parentElement?.tagName === "SCRIPT") return;
+          if (markNode(textNode, currency.code)) return;
+          walkSidewayAndUpUntil(textNode, {
+            right: (nodeList) => {
+              var text = nodeList.map((node) => node.textContent).join("");
+              var textMatch = text.match(prefixTextPattern);
+              var valueMatch = text.match(prefixValuePattern);
+              if (valueMatch) {
+                var value = Number(valueMatch[2].replace(/[\s,]/g, ""));
+                var euroValue = value * currency.rate;
+                var euroString = euroValue.toLocaleString("de-DE", {
+                  style: "currency",
+                  currency: "EUR",
+                  maximumFractionDigits: 2,
+                });
+                textNode.nodeValue = `(${euroString}) ${textNode.nodeValue}`;
+              }
+              return {
+                found: !!valueMatch,
+                keepGoing: !textMatch && !valueMatch,
+              };
+            },
+            left: (nodeList) => {
+              var text = nodeList.map((node) => node.textContent).join("");
+              var textMatch = text.match(suffixTextPattern);
+              var valueMatch = text.match(suffixValuePattern);
+              if (valueMatch) {
+                var value = Number(valueMatch[1].replace(/[\s,]/g, ""));
+                var euroValue = value * currency.rate;
+                var euroString = euroValue.toLocaleString("de-DE", {
+                  style: "currency",
+                  currency: "EUR",
+                  maximumFractionDigits: 2,
+                });
+                textNode.nodeValue = `${textNode.nodeValue} (${euroString})`;
+              }
+              return {
+                found: !!valueMatch,
+                keepGoing: !textMatch && !valueMatch,
+              };
+            },
+          });
+        }
+      });
+    }
   }
 
   /**
@@ -102,8 +127,12 @@
    * }} callbackObject
    */
   function walkSidewayAndUpUntil(startNode, callbackObject) {
-    var leftKeepGoing = true;
-    var rightKeepGoing = true;
+    var rightResult = callbackObject.right([startNode]);
+    if (rightResult.found) return;
+    var leftResult = callbackObject.left([startNode]);
+    if (leftResult.found) return;
+    var leftKeepGoing = leftResult.keepGoing;
+    var rightKeepGoing = rightResult.keepGoing;
     var leftWait = false;
     var rightWait = false;
     var leftNodeList = [startNode];
@@ -163,36 +192,46 @@
 
   /**
    * @param {Node} node
+   * @param {string} currencyCode
    */
-  function markNode(node) {
-    if (node.parentElement?.getAttribute("data-yen-to-euro-converted")) {
+  function markNode(node, currencyCode) {
+    const attribute = `data-${currencyCode.toLowerCase()}-to-euro-converted`;
+    if (node.parentElement?.getAttribute(attribute)) {
       return true;
     }
-    node.parentElement?.setAttribute("data-yen-to-euro-converted", "true");
+    node.parentElement?.setAttribute(attribute, "true");
     return false;
   }
 
-  async function fetchConversionRate() {
+  /** @param {typeof currencies[number]} currency */
+  async function fetchConversionRate(currency) {
     try {
-      var yenUserscript = JSON.parse(
-        localStorage.getItem("yenUserscript") || "{}"
+      var cachedRate = JSON.parse(
+        localStorage.getItem(currency.cacheKey) || "{}",
       );
       var today = new Date().toISOString().split("T")[0];
-      if (!yenUserscript.rate || yenUserscript.day !== today) {
-        var r = await fetch("https://open.exchangerate-api.com/v6/latest/JPY");
+      if (!cachedRate.rate || cachedRate.day !== today) {
+        var r = await fetch(
+          `https://open.exchangerate-api.com/v6/latest/${currency.code}`,
+        );
         var data = await r.json();
-        yenUserscript.rate = data.rates.EUR;
-        yenUserscript.day = today;
-        localStorage.setItem("yenUserscript", JSON.stringify(yenUserscript));
+        if (!Number.isFinite(data.rates?.EUR) || data.rates.EUR <= 0) {
+          throw new Error(`Invalid ${currency.code} to EUR conversion rate`);
+        }
+        cachedRate.rate = data.rates.EUR;
+        cachedRate.day = today;
+        localStorage.setItem(currency.cacheKey, JSON.stringify(cachedRate));
       }
-      yenToEuroConversionRate = yenUserscript.rate;
+      currency.rate = cachedRate.rate;
     } catch (error) {
       console.log(error);
-      yenToEuroConversionRate = defaultYenToEuroConversionRate;
+      currency.rate = currency.defaultRate;
     }
   }
 
-  fetchConversionRate().then(findAndConvert);
+  for (const currency of currencies) {
+    fetchConversionRate(currency).then(findAndConvert);
+  }
 
   document.documentElement.addEventListener("click", findAndConvert, true);
 

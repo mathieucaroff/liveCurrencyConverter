@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "YEN to EURO auto converter",
-  "description": "Detect prices in YEN and converts them to EURO by applying the current conversion rate. The rates come from exchangerate-api.com",
-  "version": "1.0",
+  "name": "YEN and THB to EURO auto converter",
+  "description": "Detect prices in YEN and THB and converts them to EURO by applying the current conversion rate. (sourced from exchangerate-api.com)",
+  "version": "1.1",
   "author": "Mathieu CAROFF",
   "icons": {
     "16": "icon/icon-16x16.png",
