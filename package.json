@@ -1,0 +1,36 @@
+{
+  "name": "live-currency-converter",
+  "version": "0.0.8",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.2.16",
+  "author": "Mathieu CAROFF <mathieu.caroff@free.fr>",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "compile": "tsc --noEmit",
+    "postinstall": "wxt prepare"
+  },
+  "dependencies": {
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "webextension-polyfill": "^0.12.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.2",
+    "@types/firefox-webext-browser": "^143.0.0",
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@wxt-dev/module-react": "^1.2.2",
+    "@wxt-dev/webextension-polyfill": "^1.0.0",
+    "prettier": "^3.9.5",
+    "prettier-plugin-sort-json": "^4.2.0",
+    "prettier-plugin-tailwindcss": "^0.8.0",
+    "tailwindcss": "^4.3.2",
+    "typescript": "^7.0.2",
+    "wxt": "^0.21.5"
+  }
+}

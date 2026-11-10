@@ -14,3 +14,11 @@ the current exchange rate from exchangerate-api.com.
 ## Bugs and Feature Requests
 
 Report issues at https://github.com/mathieucaroff/liveCurrencyConverter/issues
+
+## License (JAM License)
+
+> License is hereby granted to use this software and distribute it freely, as long as this copyright notice is retained and modifications are clearly marked.
+
+> ALL WARRANTIES ARE HEREBY DISCLAIMED.
+
+![Live Currency Converter icon](./icon/icon-1024x1024.png)

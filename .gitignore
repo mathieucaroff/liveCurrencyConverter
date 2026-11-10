@@ -1,1 +1,15 @@
-*.zip
+/*
+
+!/entrypoints/
+!/lib/
+!/public/
+!/ui/
+
+!/.editorconfig
+!.gitignore
+!/.prettierrc
+!/bun.lock
+!/package.json
+!/README.md
+!/tsconfig.json
+!/wxt.config.ts
