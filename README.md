@@ -1,11 +1,22 @@
-# Yen and THB to Euro live converter
+# Live Currency Converter
 
-An extension which converts Yen and THB values and appends the corresponding
-Euro value in web pages.
+A browser extension that detects prices in web pages and appends their value in
+your home currency, using exchange rates from exchangerate-api.com (refreshed
+every 6 hours).
 
-This extension automatically detects prices expressed in YEN (¥, YEN, JPY)
-and in Thai Baht (฿, BAHT, THB) on any webpage and converts them to EURO using
-the current exchange rate from exchangerate-api.com.
+## Settings
+
+Open the popup or the options page:
+
+- **Home currency**: the currency prices are converted into (USD by default).
+- **Converted currencies**: the currencies to detect, among the 166 supported by
+  exchangerate-api.com. None are enabled by default.
+
+Each currency is detected by its ISO code (`JPY`), its symbols (`¥`, `円`) and
+its names (`yen`). Some symbols and names are shared, like `$`, `£`, `kr` or
+`dollar`. A shared one goes to the currency **highest in the list**, and the
+settings show it crossed out on the currencies below. Reorder the list to
+choose which currency a shared symbol means.
 
 ![Screenshot Kayak](./screeshot/LCCKayak.png)
 

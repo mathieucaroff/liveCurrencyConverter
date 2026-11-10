@@ -3,6 +3,6 @@
     "jsx": "react-jsx",
     "types": ["node"]
   },
-  "exclude": [".output"],
+  "exclude": [".output", "**/*.test.ts"],
   "extends": "./.wxt/tsconfig.json"
 }

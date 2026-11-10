@@ -1,18 +1,28 @@
 import browser from 'webextension-polyfill'
 import { z } from 'zod'
 
+import { isKnownCurrency } from './currencies'
+
 const settingsSchema = z.object({
-  enabled: z.boolean().default(true),
+  enabled: z.boolean().catch(true).default(true),
+  homeCurrency: z.string().refine(isKnownCurrency).catch('USD').default('USD'),
+  /** Ordered: a currency higher in the list wins shared symbols and names. */
+  sourceCurrencies: z.array(z.string()).catch([]).default([]),
 })
 
 export type Settings = z.infer<typeof settingsSchema>
 
 const SETTINGS_KEY = 'settings'
-const DEFAULT_SETTINGS = settingsSchema.parse({})
 
 function normalizeSettings(input: unknown): Settings {
-  return settingsSchema.parse(input ?? {})
+  const settings = settingsSchema.parse(input ?? {})
+  settings.sourceCurrencies = [...new Set(settings.sourceCurrencies)].filter(
+    (code) => isKnownCurrency(code) && code !== settings.homeCurrency,
+  )
+  return settings
 }
+
+const DEFAULT_SETTINGS = normalizeSettings({})
 
 export async function getSettings(): Promise<Settings> {
   const stored = await browser.storage.local.get(SETTINGS_KEY)
@@ -29,7 +39,7 @@ export async function updateSettings(
   patch: Partial<Settings>,
 ): Promise<Settings> {
   const current = await getSettings()
-  const next = settingsSchema.parse({ ...current, ...patch })
+  const next = normalizeSettings({ ...current, ...patch })
   await browser.storage.local.set({ [SETTINGS_KEY]: next })
   return next
 }
