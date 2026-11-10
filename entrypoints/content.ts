@@ -3,6 +3,7 @@ import { getRates, type Rates } from '~/lib/rates'
 import { getSettings, onSettingsChanged, type Settings } from '~/lib/settings'
 
 type Converter = {
+  home: string
   matcher: Matcher
   rates: Rates
   formatter: Intl.NumberFormat
@@ -29,6 +30,7 @@ async function configure(settings: Settings) {
   if (version !== configVersion || !matcher || !rates) return
 
   converter = {
+    home: settings.homeCurrency,
     matcher,
     rates,
     formatter: new Intl.NumberFormat(navigator.language, {
@@ -47,10 +49,14 @@ function scheduleRescan() {
   }, RESCAN_DELAY_MS)
 }
 
-/** Format `amount` of `token`'s currency in the home currency, if possible. */
+/**
+ * Format `amount` of `token`'s currency in the home currency, if possible.
+ * Prices already in the home currency are left alone (no 1:1 conversion).
+ */
 function convert(c: Converter, token: string, amountText: string) {
   const code = c.matcher.currencyOf(token)
-  const rate = code ? c.rates[code] : undefined
+  if (!code || code === c.home) return null
+  const rate = c.rates[code]
   const amount = parseAmount(amountText)
   if (!rate || !Number.isFinite(amount)) return null
   return c.formatter.format(amount / rate)

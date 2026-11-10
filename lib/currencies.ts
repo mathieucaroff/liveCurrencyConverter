@@ -211,6 +211,25 @@ export const CURRENCY_BY_CODE: ReadonlyMap<string, CurrencyInfo> = new Map(
 /** Listed first in the home currency picker. */
 export const PREFERRED_HOME_CURRENCIES = ['USD', 'EUR', 'CNY']
 
+/**
+ * Every currency, roughly sorted by the total household wealth of the people
+ * using it (estimates from national wealth reports). Default priority order
+ * of the source currencies.
+ */
+// prettier-ignore
+export const CURRENCIES_BY_WEALTH = (
+  'USD EUR CNY JPY INR GBP CAD KRW AUD CHF TWD BRL HKD MXN SEK RUB SGD DKK ' +
+  'NOK ILS SAR IDR PLN TRY ZAR THB AED NZD MYR CZK PHP CLP COP QAR KWD VND ' +
+  'EGP HUF RON PKR PEN ARS BDT NGN KZT MAD UAH BGN DOP LKR KES GTQ CRC UYU ' +
+  'OMR BHD JOD DZD IRR IQD RSD ISK BYN AZN UZS GEL ETB GHS PAB TZS BOB PYG ' +
+  'MOP BND TND UGX AMD ALL MKD BAM MNT MUR JMD TTD BSD NPR KHR MMK ZMW MZN ' +
+  'BWP NAD AOA CDF XOF XAF CUP LAK LBP LYD SYP YER HNL NIO MDL KGS TJS TMT ' +
+  'AFN VES HTG MGA MWK RWF SDG SSP SOS GNF BIF DJF ERN SLE LRD GMD CVE STN ' +
+  'KMF SCR MVR BBD BMD KYD AWG XCG XCD BZD GYD SRD FJD PGK SBD VUV WST TOP ' +
+  'XPF KID TVD FOK GGP IMP JEP GIP FKP SHP LSL SZL BTN MRU ZWG CNH HRK SLL ' +
+  'ANG ZWL CLF XDR'
+).split(' ')
+
 export function isKnownCurrency(code: string): boolean {
   return CURRENCY_BY_CODE.has(code)
 }

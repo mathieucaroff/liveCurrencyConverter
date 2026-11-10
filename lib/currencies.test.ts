@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 
-import { CURRENCIES, currencyName, resolveTokenOwnership } from './currencies'
+import {
+  CURRENCIES,
+  CURRENCIES_BY_WEALTH,
+  currencyName,
+  resolveTokenOwnership,
+} from './currencies'
 import { createMatcher, parseAmount } from './matcher'
 
 const EXCHANGERATE_API_CODES =
@@ -12,6 +17,20 @@ describe('catalog', () => {
   test('lists exactly the 166 exchangerate-api currencies', () => {
     expect(CURRENCIES.map((c) => c.code)).toEqual(EXCHANGERATE_API_CODES)
     expect(CURRENCIES).toHaveLength(166)
+  })
+
+  test('the wealth order lists every currency exactly once', () => {
+    expect([...CURRENCIES_BY_WEALTH].sort()).toEqual(
+      [...EXCHANGERATE_API_CODES].sort(),
+    )
+    expect(CURRENCIES_BY_WEALTH.slice(0, 6)).toEqual([
+      'USD',
+      'EUR',
+      'CNY',
+      'JPY',
+      'INR',
+      'GBP',
+    ])
   })
 
   test('every currency has a name', () => {

@@ -1,13 +1,20 @@
 import browser from 'webextension-polyfill'
 import { z } from 'zod'
 
-import { isKnownCurrency } from './currencies'
+import { CURRENCIES_BY_WEALTH, isKnownCurrency } from './currencies'
 
 const settingsSchema = z.object({
   enabled: z.boolean().catch(true).default(true),
   homeCurrency: z.string().refine(isKnownCurrency).catch('USD').default('USD'),
-  /** Ordered: a currency higher in the list wins shared symbols and names. */
-  sourceCurrencies: z.array(z.string()).catch([]).default([]),
+  /**
+   * Ordered: a currency higher in the list wins shared symbols and names.
+   * It may contain the home currency, whose prices are detected (so they keep
+   * their symbols) but never converted.
+   */
+  sourceCurrencies: z
+    .array(z.string())
+    .catch(() => [...CURRENCIES_BY_WEALTH])
+    .default(() => [...CURRENCIES_BY_WEALTH]),
 })
 
 export type Settings = z.infer<typeof settingsSchema>
@@ -17,7 +24,7 @@ const SETTINGS_KEY = 'settings'
 function normalizeSettings(input: unknown): Settings {
   const settings = settingsSchema.parse(input ?? {})
   settings.sourceCurrencies = [...new Set(settings.sourceCurrencies)].filter(
-    (code) => isKnownCurrency(code) && code !== settings.homeCurrency,
+    isKnownCurrency,
   )
   return settings
 }
