@@ -7,6 +7,7 @@ import {
   getSettings,
   updateSettings,
 } from '~/lib/settings'
+import { reloadPage } from '~/lib/reloadPage'
 import { HomeCurrencySelect } from '~/ui/HomeCurrencySelect'
 import { OnboardingDone, OnboardingPanel } from '~/ui/Onboarding'
 import { SourceCurrencyList } from '~/ui/SourceCurrencyList'
@@ -18,17 +19,25 @@ type SettingsAppProps = {
 
 function Card({
   title,
+  aside,
   description,
   children,
 }: {
   title: string
+  /** Shown in the top right corner. */
+  aside?: ReactNode
   description?: ReactNode
   children?: ReactNode
 }) {
   return (
     <section className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
       <div className="space-y-1">
-        <h2 className="text-sm font-medium text-stone-100">{title}</h2>
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="text-sm font-medium text-stone-100">{title}</h2>
+          {aside && (
+            <span className="shrink-0 text-xs text-stone-400">{aside}</span>
+          )}
+        </div>
         {description && (
           <p className="text-sm leading-5 text-stone-400">{description}</p>
         )}
@@ -79,6 +88,9 @@ function EnableToggle({
 export function SettingsApp({ mode }: SettingsAppProps) {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS)
   const [isLoading, setIsLoading] = useState(true)
+  /** Enables the Reload button once the source list was changed. */
+  const [sourcesChanged, setSourcesChanged] = useState(false)
+  const sourceCount = settings.sourceCurrencies.length
 
   useEffect(() => {
     let isMounted = true
@@ -171,18 +183,36 @@ export function SettingsApp({ mode }: SettingsAppProps) {
 
           <Card
             title="Source currencies"
+            aside={`${sourceCount} active source ${
+              sourceCount === 1 ? 'currency' : 'currencies'
+            }`}
             description="Currencies detected in pages, in priority order: a currency higher in the list gets the symbols and names it shares with lower ones (crossed out, with the owner after the arrow)."
           >
+            <button
+              type="button"
+              disabled={!sourcesChanged}
+              title={
+                sourcesChanged
+                  ? 'Reload the page to convert its prices with the new list'
+                  : 'Change the list to enable'
+              }
+              onClick={async () => {
+                await reloadPage()
+                setSourcesChanged(false)
+              }}
+              className="w-full rounded-lg border border-amber-400/60 px-2.5 py-1.5 text-xs font-medium text-amber-200 transition hover:bg-amber-400/10 disabled:border-white/15 disabled:text-stone-500 disabled:hover:bg-transparent"
+            >
+              ⟳ Reload
+            </button>
             <SourceCurrencyList
               codes={settings.sourceCurrencies}
               home={settings.homeCurrency}
-              onChange={(sourceCurrencies) => void save({ sourceCurrencies })}
+              onChange={(sourceCurrencies) => {
+                setSourcesChanged(true)
+                void save({ sourceCurrencies })
+              }}
               listClassName={mode === 'popup' ? 'max-h-80' : 'max-h-[32rem]'}
             />
-            <p className="text-xs leading-5 text-stone-500">
-              Changes apply to new page content. Reload a page to re-convert
-              prices that were already annotated.
-            </p>
           </Card>
         </div>
       </>

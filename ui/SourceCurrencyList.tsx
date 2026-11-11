@@ -247,20 +247,35 @@ export function SourceCurrencyList({
           setAddable(ALL_CODES.filter((code) => !codes.includes(code)))
         }
         trigger={({ open, toggle: toggleMenu }) => (
-          <button
-            type="button"
-            disabled={missingCount === 0}
-            onClick={toggleMenu}
-            aria-expanded={open}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 py-2 text-sm text-stone-200 transition hover:border-amber-400/60 hover:bg-white/5 disabled:opacity-40 disabled:hover:border-white/20 disabled:hover:bg-transparent"
+          // The wrapper carries the hover: a disabled button may not get it.
+          <div
+            className="group"
+            title={missingCount === 0 ? 'All currencies are listed' : undefined}
           >
-            <span aria-hidden="true" className="text-lg leading-none">
-              +
-            </span>
-            {missingCount === 0
-              ? 'All currencies are listed'
-              : 'Add source currencies'}
-          </button>
+            <button
+              type="button"
+              disabled={missingCount === 0}
+              onClick={toggleMenu}
+              aria-expanded={open}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-solid border-white/40 py-2 text-sm text-stone-200 transition hover:border-amber-400/70 hover:bg-white/5 disabled:cursor-not-allowed disabled:border-white/25 disabled:text-stone-500 disabled:hover:bg-transparent"
+            >
+              <span aria-hidden="true" className="text-lg leading-none">
+                +
+              </span>
+              {missingCount === 0 ? (
+                <>
+                  <span className="group-hover:hidden">
+                    Add source currencies
+                  </span>
+                  <span className="hidden group-hover:inline">
+                    All currencies are listed
+                  </span>
+                </>
+              ) : (
+                'Add source currencies'
+              )}
+            </button>
+          </div>
         )}
       >
         {(close) => (
