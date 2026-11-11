@@ -119,6 +119,43 @@ describe('findAndConvert', () => {
     expect(body.textContent).toBe('¥2,000 (€12.50)')
   })
 
+  test('marks the elements it annotated', () => {
+    const body = page('<p><span>¥</span><b>1,000</b></p>')
+    findAndConvert(eurConverter(), body)
+    expect(body.querySelector('b')!.getAttribute('data-lcc-converted')).toBe(
+      'true',
+    )
+  })
+
+  test('does not annotate a copy of an annotated node again', () => {
+    const body = page('<p>¥1,000</p>')
+    const c = eurConverter()
+    findAndConvert(c, body)
+    // the site replaces our text node with a copy holding the same text
+    const p = body.querySelector('p')!
+    const copy = p.ownerDocument.createTextNode(p.textContent!)
+    p.replaceChild(copy, p.firstChild!)
+    findAndConvert(c, body)
+    expect(body.textContent).toBe('¥1,000 (€6.25)')
+  })
+
+  test('does not annotate a copy of a split price again', () => {
+    const body = page('<p><span>¥</span><b>1,000</b></p>')
+    const c = eurConverter()
+    findAndConvert(c, body)
+    const b = body.querySelector('b')!
+    const copy = b.ownerDocument.createTextNode(b.textContent!)
+    b.replaceChild(copy, b.firstChild!)
+    findAndConvert(c, body)
+    expect(body.textContent).toBe('¥1,000 (€6.25)')
+  })
+
+  test('annotates identical prices in the same node', () => {
+    const body = page('<p>¥1,000 or ¥1,000</p>')
+    findAndConvert(eurConverter(), body)
+    expect(body.textContent).toBe('¥1,000 (€6.25) or ¥1,000 (€6.25)')
+  })
+
   test('leaves home currency prices alone', () => {
     const body = page('<p>€5 and ¥160</p>')
     findAndConvert(eurConverter(), body)

@@ -15,6 +15,11 @@ export type Converter = {
   /** Global versions of the matcher's value patterns, to find every price. */
   prefixValueAll: RegExp
   suffixValueAll: RegExp
+  /**
+   * Matches text shaped like one of our annotations: " (…)" containing the
+   * home currency symbol as `formatter` writes it, e.g. " (€6.25)".
+   */
+  annotationLike: RegExp
 }
 
 export function createConverter(options: {
@@ -24,16 +29,24 @@ export function createConverter(options: {
   locale: string
 }): Converter {
   const { home, matcher, rates, locale } = options
+  const formatter = new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: home,
+  })
+  const symbol =
+    formatter.formatToParts(1).find((part) => part.type === 'currency')
+      ?.value ?? home
   return {
     home,
     matcher,
     rates,
-    formatter: new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency: home,
-    }),
+    formatter,
     prefixValueAll: new RegExp(matcher.prefixValue.source, 'gu'),
     suffixValueAll: new RegExp(matcher.suffixValue.source, 'gu'),
+    annotationLike: new RegExp(
+      ` \\([^()]*${symbol.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}[^()]*\\)`,
+      'u',
+    ),
   }
 }
 
@@ -51,10 +64,17 @@ const SHOW_TEXT = 0x4 // NodeFilter.SHOW_TEXT
 const SKIPPED_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA'])
 
 /**
+ * Set on every element whose text we annotated. Unlike `written`, it survives
+ * the site replacing our text node with a copy (same text, new node), which
+ * would otherwise make us annotate the copy again.
+ */
+const MARK_ATTRIBUTE = 'data-lcc-converted'
+
+/**
  * The text nodes we inserted annotations into, with their content right after
  * our last write and the annotations we put there.
  *
- * Nothing is stored in the page itself. A record only counts while the node
+ * A record only counts while the node
  * still holds exactly what we wrote: if the site rewrites the node (e.g. a
  * React re-render dropping our annotation), the record is ignored and the
  * node's prices get converted again. Being a WeakMap, it doesn't keep removed
@@ -127,14 +147,36 @@ function isAnnotatedAt(nodes: Node[], offset: number): boolean {
   )
 }
 
-/** Insert `annotation` at position `offset` and remember it. */
+/**
+ * Insert `annotation` at position `offset`, remember it, and mark the
+ * element. Cancelled if that exact annotation is already there, right after
+ * the price: a last guard against annotating the same price twice when
+ * `written` lost track of the node. (Checking the whole node instead would
+ * wrongly skip a second, identical price: "¥1,000 or ¥1,000".)
+ */
 function insertAt(nodes: Node[], offset: number, annotation: string) {
   const position = textPositionAt(nodes, offset)
   if (!position) return
   const { node, offset: at } = position
+  if (node.data.startsWith(annotation, at)) return
   const previous = validRecord(node)?.annotations ?? []
   node.data = `${node.data.slice(0, at)}${annotation}${node.data.slice(at)}`
   written.set(node, { data: node.data, annotations: [...previous, annotation] })
+  node.parentElement?.setAttribute(MARK_ATTRIBUTE, 'true')
+}
+
+/**
+ * Whether to leave a text node alone: it sits in an element we annotated,
+ * we have no record of it (so it's likely a copy of a node we wrote), and it
+ * still holds something shaped like our annotation. If the site rewrote it
+ * without our annotation, it is processed again.
+ */
+function isUnrecordedAnnotatedCopy(c: Converter, node: Text): boolean {
+  return (
+    !!node.parentElement?.hasAttribute(MARK_ATTRIBUTE) &&
+    !validRecord(node) &&
+    c.annotationLike.test(node.data)
+  )
 }
 
 const fractionDigitsCache = new Map<string, number>()
@@ -209,15 +251,21 @@ function annotateMatches(
  * 4. Insert the converted value right after each price not annotated yet:
  *    "¥1,000 (€6.25)", "1,000 THB (€27.78)".
  *
- * Nothing marks nodes as done, so running it again is safe and cheap: prices
- * that are already annotated are skipped, while prices whose amount appeared
- * later, or whose annotation the site erased, get converted.
+ * Running it again is safe: prices that are already annotated are skipped,
+ * while prices whose amount appeared later, or whose annotation the site
+ * erased, get converted. Three guards keep a price from being annotated
+ * twice, from the most to the least precise:
+ * - `written` remembers each annotated text node and what we put there;
+ * - `data-lcc-converted` on the element catches copies of our text nodes
+ *   (see `isUnrecordedAnnotatedCopy`);
+ * - `insertAt` cancels if the exact annotation already follows the price.
  */
 export function findAndConvert(c: Converter, root: Node) {
   const { matcher } = c
 
   visitAllTextNodes(root, (textNode) => {
     if (SKIPPED_TAGS.has(textNode.parentElement?.tagName ?? '')) return
+    if (isUnrecordedAnnotatedCopy(c, textNode)) return
     if (!matcher.any.test(ownText(textNode))) return
 
     walkSidewayAndUpUntil(textNode, {
