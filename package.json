@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.2",
+    "@types/bun": "^1.4.4",
     "@types/firefox-webext-browser": "^143.0.0",
     "@types/node": "^26.1.1",
     "@types/react": "^19.2.17",

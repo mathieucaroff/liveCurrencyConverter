@@ -67,15 +67,20 @@ function validRecord(node: Text) {
   return record && record.data === node.data ? record : undefined
 }
 
+/** Stands in for annotation characters: not a digit, space, letter or symbol. */
+const MASK = '￼'
+
 /**
- * The node's text with our own annotations blanked out (replaced by spaces
- * of the same length, so offsets are unchanged). This keeps an annotation
- * like "($6.25)" from being read as a new price.
+ * The node's text with our own annotations blanked out, character for
+ * character so offsets are unchanged. This keeps an annotation like "($6.25)"
+ * from being read as a new price. The mask is not a space, so a price can't
+ * reach across it: once "¥1,000 THB" became "¥1,000 (€6.25) THB", the
+ * suffix side can't read "1,000 THB" as a second price.
  */
 function ownText(node: Text): string {
   let text = node.data
   for (const annotation of validRecord(node)?.annotations ?? []) {
-    text = text.split(annotation).join(' '.repeat(annotation.length))
+    text = text.split(annotation).join(MASK.repeat(annotation.length))
   }
   return text
 }
@@ -298,11 +303,12 @@ function walkSidewayAndUpUntil(
     right: (nodeList: Node[]) => WalkResult
   },
 ) {
-  // Step 1: the start node alone. Right first: prefix prices win.
+  // Step 1: the start node alone, both sides: a node can hold prefix and
+  // suffix prices ("AU$10 or 177,96 $AU"). Right first, so where both could
+  // read the same amount ("¥1,000 THB"), the prefix price wins.
   const rightResult = callbackObject.right([startNode])
-  if (rightResult.found) return
   const leftResult = callbackObject.left([startNode])
-  if (leftResult.found) return
+  if (rightResult.found || leftResult.found) return
   let leftKeepGoing = leftResult.keepGoing
   let rightKeepGoing = rightResult.keepGoing
   /** A side waits when it ran out of siblings at the current level. */

@@ -2,7 +2,6 @@ import { resolveTokenOwnership, tokenKey } from './currencies'
 
 /** Letters of space-separated scripts: a token must not be glued to one. */
 const WORD_LETTER = '\\p{Script=Latin}\\p{Script=Cyrillic}\\p{Script=Greek}'
-const WORD_LETTER_RE = new RegExp(`[${WORD_LETTER}]`, 'u')
 
 const SPACE = '[\\s\\u202F\\u00A0]'
 const NON_SPACE = '[^\\s\\u202F\\u00A0]'
@@ -65,14 +64,14 @@ export function tokenSpellings(enabled: string[]): {
   return { spellings: sorted, owner }
 }
 
+/**
+ * A token is never glued to a letter, on either side: "A$" is not "$",
+ * "$AU" is not "$", "Kraków" is not "kr". Combined with longest-first
+ * matching, a price written "$AU" matches the "$AU" token (AUD) or nothing,
+ * but never "$" (USD) followed by stray letters.
+ */
 function tokenSource(spelling: string): string {
-  let source = escapeRegExp(spelling)
-  // never match inside a word ("A$" is not "$", "Kraków" is not "kr")
-  source = `(?<![${WORD_LETTER}])${source}`
-  if (WORD_LETTER_RE.test(spelling.at(-1) ?? '')) {
-    source = `${source}(?![${WORD_LETTER}])`
-  }
-  return source
+  return `(?<![${WORD_LETTER}])${escapeRegExp(spelling)}(?![${WORD_LETTER}])`
 }
 
 /** Build the page matcher for an ordered list of enabled currencies. */

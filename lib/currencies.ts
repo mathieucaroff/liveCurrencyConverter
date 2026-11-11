@@ -200,8 +200,25 @@ const ROWS: Row[] = [
   ['ZWL', ['$', 'Z$'], DOLLAR],
 ]
 
+/**
+ * Add the mirrored form of every "letters + $" symbol: "AU$" is also written
+ * "$AU" (e.g. in French: "177,96 $AU"), "US$" as "$US", "C$" as "$C".
+ */
+function withMirroredDollars(symbols: string[]): string[] {
+  const mirrored = symbols.flatMap((symbol) => {
+    const prefix = /^(\p{L}+)\$$/u.exec(symbol)?.[1]
+    return prefix ? [`$${prefix}`] : []
+  })
+  return [...new Set([...symbols, ...mirrored])]
+}
+
 export const CURRENCIES: CurrencyInfo[] = ROWS.map(
-  ([code, symbols, aliases, name]) => ({ code, symbols, aliases, name }),
+  ([code, symbols, aliases, name]) => ({
+    code,
+    symbols: withMirroredDollars(symbols),
+    aliases,
+    name,
+  }),
 )
 
 export const CURRENCY_BY_CODE: ReadonlyMap<string, CurrencyInfo> = new Map(

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { Window } from 'happy-dom'
 
+import { CURRENCIES_BY_WEALTH } from './currencies'
 import { createMatcher } from './matcher'
 import { createConverter, findAndConvert } from './pageConverter'
 
@@ -45,6 +46,41 @@ describe('findAndConvert', () => {
     const body = page('<p>177,96 USD</p>')
     findAndConvert(c, body)
     expect(body.textContent).toBe('177,96 USD (€158.89)')
+  })
+
+  test('matches the longest symbol before applying the list order', () => {
+    // all currencies in the default order: "$" belongs to USD
+    const c = createConverter({
+      home: 'EUR',
+      matcher: createMatcher(CURRENCIES_BY_WEALTH)!,
+      rates: { USD: 1.12, AUD: 1.7 },
+      locale: 'en-US',
+    })
+    const body = page('<p>177,96$AU or 177,96 $AU or AU$10 or $10</p>')
+    findAndConvert(c, body)
+    expect(body.textContent).toBe(
+      '177,96$AU (€104.68) or 177,96 $AU (€104.68) or AU$10 (€5.88) or $10 (€8.93)',
+    )
+  })
+
+  test('does not match a symbol glued to unknown letters', () => {
+    const c = createConverter({
+      home: 'EUR',
+      matcher: createMatcher(['USD'])!,
+      rates: { USD: 1.12 },
+      locale: 'en-US',
+    })
+    const body = page('<p>177,96$AU</p>')
+    findAndConvert(c, body)
+    expect(body.textContent).toBe('177,96$AU')
+  })
+
+  test('reads an amount between two tokens once, as a prefix price', () => {
+    const body = page('<p>¥1,000 THB</p>')
+    const c = eurConverter()
+    findAndConvert(c, body)
+    findAndConvert(c, body)
+    expect(body.textContent).toBe('¥1,000 (€6.25) THB')
   })
 
   test('annotates every price of an element', () => {
