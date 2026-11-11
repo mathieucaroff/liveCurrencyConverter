@@ -23,7 +23,13 @@ let configVersion = 0
 async function configure(settings: Settings) {
   const version = ++configVersion
   converter = null
-  if (!settings.enabled || settings.sourceCurrencies.length === 0) return
+  if (
+    !settings.onboarded ||
+    !settings.enabled ||
+    settings.sourceCurrencies.length === 0
+  ) {
+    return
+  }
 
   const matcher = createMatcher(settings.sourceCurrencies)
   const rates = await getRates(settings.homeCurrency)

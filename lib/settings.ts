@@ -5,6 +5,8 @@ import { CURRENCIES_BY_WEALTH, isKnownCurrency } from './currencies'
 
 const settingsSchema = z.object({
   enabled: z.boolean().catch(true).default(true),
+  /** False until the user has chosen a home currency; nothing is converted before. */
+  onboarded: z.boolean().catch(false).default(false),
   homeCurrency: z.string().refine(isKnownCurrency).catch('USD').default('USD'),
   /**
    * Ordered: a currency higher in the list wins shared symbols and names.
@@ -49,6 +51,26 @@ export async function updateSettings(
   const next = normalizeSettings({ ...current, ...patch })
   await browser.storage.local.set({ [SETTINGS_KEY]: next })
   return next
+}
+
+/**
+ * Finish onboarding with the chosen home currency. The home currency moves to
+ * the top of the source list, so it keeps its symbols (e.g. "¥" for JPY over
+ * CNY) and prices in it are left alone instead of being read as another
+ * currency.
+ */
+export async function completeOnboarding(
+  homeCurrency: string,
+): Promise<Settings> {
+  const current = await getSettings()
+  return updateSettings({
+    homeCurrency,
+    sourceCurrencies: [
+      homeCurrency,
+      ...current.sourceCurrencies.filter((code) => code !== homeCurrency),
+    ],
+    onboarded: true,
+  })
 }
 
 export function onSettingsChanged(callback: (settings: Settings) => void) {

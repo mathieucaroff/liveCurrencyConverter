@@ -6,11 +6,16 @@ every 6 hours).
 
 ## Settings
 
-Open the popup or the options page:
+On install, a welcome page asks for your home currency (guessed from your
+browser language). Nothing is converted until you choose one.
 
-- **Home currency**: the currency prices are converted into (USD by default).
-- **Converted currencies**: the currencies to detect, among the 166 supported by
-  exchangerate-api.com. None are enabled by default.
+Afterwards, open the popup or the options page:
+
+- **Home currency**: the currency prices are converted into.
+- **Source currencies**: the currencies to detect, in priority order. By default
+  all 166 currencies supported by exchangerate-api.com are listed, roughly
+  sorted by the wealth of their users, with your home currency moved to the
+  top. Prices in your home currency are detected but not converted.
 
 Each currency is detected by its ISO code (`JPY`), its symbols (`¥`, `円`) and
 its names (`yen`). Some symbols and names are shared, like `$`, `£`, `kr` or
