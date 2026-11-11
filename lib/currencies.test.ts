@@ -59,6 +59,33 @@ describe('resolveTokenOwnership', () => {
   })
 })
 
+describe('parseAmount', () => {
+  test('reads decimal commas and decimal points', () => {
+    expect(parseAmount('177,96')).toBe(177.96)
+    expect(parseAmount('0,5')).toBe(0.5)
+    expect(parseAmount('12.5')).toBe(12.5)
+    expect(parseAmount('1.234,56')).toBe(1234.56)
+    expect(parseAmount('1,234.56')).toBe(1234.56)
+  })
+
+  test('reads grouping separators', () => {
+    expect(parseAmount('1,000')).toBe(1000)
+    expect(parseAmount('1.000')).toBe(1000)
+    expect(parseAmount('1,000,000')).toBe(1_000_000)
+    expect(parseAmount('1.000.000')).toBe(1_000_000)
+    expect(parseAmount('1 234,56')).toBe(1234.56)
+    expect(parseAmount('1 234')).toBe(1234)
+    expect(parseAmount('1 234')).toBe(1234)
+    expect(parseAmount("1'000")).toBe(1000)
+    expect(parseAmount('1000')).toBe(1000)
+  })
+
+  test('reads 3 digits after a single separator as decimals for 3-decimal currencies', () => {
+    expect(parseAmount('1.500', 3)).toBe(1.5)
+    expect(parseAmount('1,000', 0)).toBe(1000)
+  })
+})
+
 describe('createMatcher', () => {
   test('returns null when nothing is enabled', () => {
     expect(createMatcher([])).toBeNull()
@@ -97,6 +124,15 @@ describe('createMatcher', () => {
     expect(m.any.test('500 Yen')).toBe(true)
     expect(m.any.test('try 5 times')).toBe(false)
     expect(m.any.test('TRY 5')).toBe(true)
+  })
+
+  test('captures amounts with either decimal convention', () => {
+    const m = createMatcher(['USD', 'JPY'])!
+    expect('177,96 USD'.match(m.suffixValue)![1]).toBe('177,96')
+    expect('1.234,56 USD'.match(m.suffixValue)![1]).toBe('1.234,56')
+    expect('1 234,56 USD'.match(m.suffixValue)![1]).toBe('1 234,56')
+    expect('costs ¥1,000.'.match(m.prefixValue)![2]).toBe('1,000')
+    expect('¥1,000, then'.match(m.prefixValue)![2]).toBe('1,000')
   })
 
   test('word tokens do not match inside words', () => {

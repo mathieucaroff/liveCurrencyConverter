@@ -35,6 +35,18 @@ describe('findAndConvert', () => {
     expect(body.textContent).toBe('1,000 THB (€27.78) total')
   })
 
+  test('reads a decimal comma', () => {
+    const c = createConverter({
+      home: 'EUR',
+      matcher: createMatcher(['EUR', 'USD'])!,
+      rates: { USD: 1.12 },
+      locale: 'en-US',
+    })
+    const body = page('<p>177,96 USD</p>')
+    findAndConvert(c, body)
+    expect(body.textContent).toBe('177,96 USD (€158.89)')
+  })
+
   test('annotates every price of an element', () => {
     const body = page('<p>¥1,000 or ¥2,000</p>')
     findAndConvert(eurConverter(), body)

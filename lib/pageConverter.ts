@@ -132,6 +132,26 @@ function insertAt(nodes: Node[], offset: number, annotation: string) {
   written.set(node, { data: node.data, annotations: [...previous, annotation] })
 }
 
+const fractionDigitsCache = new Map<string, number>()
+
+/** A currency's usual number of decimals: 2 for USD, 0 for JPY, 3 for KWD. */
+function fractionDigitsOf(code: string): number {
+  let digits = fractionDigitsCache.get(code)
+  if (digits === undefined) {
+    try {
+      digits =
+        new Intl.NumberFormat('en', {
+          style: 'currency',
+          currency: code,
+        }).resolvedOptions().maximumFractionDigits ?? 2
+    } catch {
+      digits = 2
+    }
+    fractionDigitsCache.set(code, digits)
+  }
+  return digits
+}
+
 /**
  * Format `amount` of `token`'s currency in the home currency, if possible.
  * Prices already in the home currency are left alone (no 1:1 conversion).
@@ -140,7 +160,7 @@ function convert(c: Converter, token: string, amountText: string) {
   const code = c.matcher.currencyOf(token)
   if (!code || code === c.home) return null
   const rate = c.rates[code]
-  const amount = parseAmount(amountText)
+  const amount = parseAmount(amountText, fractionDigitsOf(code))
   if (!rate || !Number.isFinite(amount)) return null
   return c.formatter.format(amount / rate)
 }

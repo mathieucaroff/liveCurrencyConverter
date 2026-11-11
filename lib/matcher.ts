@@ -6,7 +6,15 @@ const WORD_LETTER_RE = new RegExp(`[${WORD_LETTER}]`, 'u')
 
 const SPACE = '[\\s\\u202F\\u00A0]'
 const NON_SPACE = '[^\\s\\u202F\\u00A0]'
-const VALUE = '(\\d[\\d\\s,]*(?:\\.\\d+)?)'
+/**
+ * An amount: digits, optional groups of exactly 3 digits after a grouping
+ * separator (space, narrow/no-break space, apostrophe, dot or comma), and an
+ * optional decimal part after a dot or comma. Matches "1000", "1,000.50",
+ * "1.234,56", "1 234,56", "1'000", "177,96". It always ends with a digit, so
+ * a sentence's final "." or "," is left out. Which separator is the decimal
+ * one is decided by `parseAmount`.
+ */
+const VALUE = "(\\d+(?:[\\s\\u202F\\u00A0'’.,]\\d{3}(?!\\d))*(?:[.,]\\d+)?)"
 
 export type Matcher = {
   /** Matches any detection token. */
@@ -82,7 +90,41 @@ export function createMatcher(enabled: string[]): Matcher | null {
   }
 }
 
-/** "1 234,5" or "12,000.50" → number (commas and spaces are thousands separators). */
-export function parseAmount(text: string): number {
-  return Number(text.replace(/[\s,]/g, ''))
+/**
+ * Read an amount written with either decimal convention: "177,96" → 177.96,
+ * "1.234,56" → 1234.56, "1,234.56" → 1234.56, "1 234" → 1234.
+ *
+ * - Spaces and apostrophes are always grouping separators.
+ * - With both "." and ",", the last one is the decimal separator.
+ * - A separator that appears several times groups thousands ("1.000.000").
+ * - A single separator followed by exactly 3 digits is ambiguous ("1,000",
+ *   "1.500"). It groups thousands, unless the currency has 3 decimals (KWD,
+ *   BHD…), where "1.500" means 1.5. `fractionDigits` is the currency's usual
+ *   number of decimals.
+ * - Otherwise, a single separator is the decimal one ("177,96", "12.5").
+ */
+export function parseAmount(text: string, fractionDigits = 2): number {
+  const digits = text.replace(/[\s'’]/g, '')
+  const lastDot = digits.lastIndexOf('.')
+  const lastComma = digits.lastIndexOf(',')
+
+  let decimal: '.' | ',' | null
+  if (lastDot >= 0 && lastComma >= 0) {
+    decimal = lastDot > lastComma ? '.' : ','
+  } else if (lastDot >= 0 || lastComma >= 0) {
+    const separator = lastDot >= 0 ? '.' : ','
+    const last = Math.max(lastDot, lastComma)
+    const count = digits.split(separator).length - 1
+    const decimalsAfter = digits.length - last - 1
+    if (count > 1) decimal = null
+    else if (decimalsAfter === 3)
+      decimal = fractionDigits === 3 ? separator : null
+    else decimal = separator
+  } else {
+    decimal = null
+  }
+
+  if (!decimal) return Number(digits.replace(/[.,]/g, ''))
+  const grouping = decimal === ',' ? '.' : ','
+  return Number(digits.split(grouping).join('').replace(decimal, '.'))
 }
