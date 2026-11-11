@@ -26,6 +26,7 @@
     "@types/react-dom": "^19.2.3",
     "@wxt-dev/module-react": "^1.2.2",
     "@wxt-dev/webextension-polyfill": "^1.0.0",
+    "happy-dom": "^21.0.4",
     "prettier": "^3.9.5",
     "prettier-plugin-sort-json": "^4.2.0",
     "prettier-plugin-tailwindcss": "^0.8.0",
