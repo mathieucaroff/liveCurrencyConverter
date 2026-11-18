@@ -1,14 +1,17 @@
 {
   "name": "live-currency-converter",
-  "version": "0.0.8",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "packageManager": "bun@1.2.16",
   "author": "Mathieu CAROFF <mathieu.caroff@free.fr>",
   "scripts": {
     "dev": "wxt",
+    "devf": "wxt -b firefox",
     "build": "wxt build",
+    "buildf": "wxt build -b firefox",
     "zip": "wxt zip",
+    "zipf": "wxt zip -b firefox",
     "compile": "tsc --noEmit",
     "postinstall": "wxt prepare"
   },

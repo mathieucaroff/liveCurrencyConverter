@@ -28,6 +28,8 @@ export default defineConfig({
     browser_specific_settings: {
       gecko: {
         id: 'live-currency-converter@oxie.cc',
+        // Firefox's built-in data consent: the extension collects nothing
+        data_collection_permissions: { required: ['none'] },
       },
     },
   },
