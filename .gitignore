@@ -3,6 +3,7 @@
 !/entrypoints/
 !/lib/
 !/public/
+!/screenshot/
 !/ui/
 
 !/.editorconfig

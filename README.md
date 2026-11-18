@@ -23,9 +23,13 @@ its names (`yen`). Some symbols and names are shared, like `$`, `£`, `kr` or
 settings show it crossed out on the currencies below. Reorder the list to
 choose which currency a shared symbol means.
 
-![Screenshot Kayak](./screeshot/LCCKayak.png)
+![Screenshot Kayak](./screenshot/LCCKayak.png)
 
-![Screenshot Agoda](./screeshot/LCCAgoda.png)
+![Screenshot Agoda](./screenshot/LCCAgoda.png)
+
+![Screenshot Extension Popup](./screenshot/LCCPopup.png)
+
+![Screenshot Welcome Page](./screenshot/LCCOnboarding.png)
 
 ## Bugs and Feature Requests
 
@@ -34,7 +38,7 @@ Report issues at https://github.com/mathieucaroff/liveCurrencyConverter/issues
 ## License (JAM License)
 
 > License is hereby granted to use this software and distribute it freely, as long as this copyright notice is retained and modifications are clearly marked.
-
+>
 > ALL WARRANTIES ARE HEREBY DISCLAIMED.
 
-![Live Currency Converter icon](./icon/icon-1024x1024.png)
+![Live Currency Converter icon](./public/icon/icon-1024x1024.png)
