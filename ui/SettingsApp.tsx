@@ -47,41 +47,69 @@ function Card({
   )
 }
 
+function ReloadButton({
+  disabled,
+  title,
+  onClick,
+}: {
+  disabled?: boolean
+  title: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      title={title}
+      onClick={onClick}
+      className="w-full rounded-lg border border-amber-400/60 px-2.5 py-1.5 text-xs font-medium text-amber-200 transition hover:bg-amber-400/10 disabled:border-white/15 disabled:text-stone-500 disabled:hover:bg-transparent"
+    >
+      ⟳ Reload
+    </button>
+  )
+}
+
 function EnableToggle({
   checked,
   disabled,
   onChange,
+  children,
 }: {
   checked: boolean
   disabled: boolean
   onChange: (checked: boolean) => void
+  /** Shown under the switch, e.g. a Reload button. */
+  children?: ReactNode
 }) {
   return (
-    <label className="flex items-start justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 transition">
-      <div className="space-y-1">
-        <div className="flex items-center gap-2 text-sm font-medium text-stone-100">
-          <span aria-hidden="true" className="inline-block w-3 text-center">
-            ▶
-          </span>
-          <span>Enable extension</span>
+    <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+      <label className="flex items-start justify-between gap-4 transition">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-sm font-medium text-stone-100">
+            <span aria-hidden="true" className="inline-block w-3 text-center">
+              ▶
+            </span>
+            <span>Enable extension</span>
+          </div>
+          <div className="text-sm leading-5 text-stone-400">
+            Go through pages dynamically to find and convert money amounts.
+          </div>
         </div>
-        <div className="text-sm leading-5 text-stone-400">
-          Go through pages dynamically to find and convert money amounts.
-        </div>
-      </div>
 
-      <span className="relative mt-1 inline-flex shrink-0 items-center">
-        <input
-          type="checkbox"
-          className="peer sr-only"
-          checked={checked}
-          disabled={disabled}
-          onChange={(event) => onChange(event.target.checked)}
-        />
-        <span className="h-6 w-11 rounded-full bg-stone-700 transition peer-checked:bg-amber-400 peer-disabled:opacity-60" />
-        <span className="pointer-events-none absolute left-1 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-5" />
-      </span>
-    </label>
+        <span className="relative mt-1 inline-flex shrink-0 items-center">
+          <input
+            type="checkbox"
+            className="peer sr-only"
+            checked={checked}
+            disabled={disabled}
+            onChange={(event) => onChange(event.target.checked)}
+          />
+          <span className="h-6 w-11 rounded-full bg-stone-700 transition peer-checked:bg-amber-400 peer-disabled:opacity-60" />
+          <span className="pointer-events-none absolute left-1 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-5" />
+        </span>
+      </label>
+      {children}
+    </div>
   )
 }
 
@@ -90,6 +118,8 @@ export function SettingsApp({ mode }: SettingsAppProps) {
   const [isLoading, setIsLoading] = useState(true)
   /** Enables the Reload button once the source list was changed. */
   const [sourcesChanged, setSourcesChanged] = useState(false)
+  /** The `enabled` value pages were last loaded with, as far as we know. */
+  const [pageEnabled, setPageEnabled] = useState<boolean | null>(null)
   const sourceCount = settings.sourceCurrencies.length
 
   useEffect(() => {
@@ -101,6 +131,7 @@ export function SettingsApp({ mode }: SettingsAppProps) {
       }
 
       setSettings(nextSettings)
+      setPageEnabled(nextSettings.enabled)
       setIsLoading(false)
     })
 
@@ -111,6 +142,13 @@ export function SettingsApp({ mode }: SettingsAppProps) {
 
   async function save(patch: Partial<Settings>) {
     setSettings(await updateSettings(patch))
+  }
+
+  /** Reload the page: it then runs with all the current settings. */
+  async function reload() {
+    await reloadPage()
+    setSourcesChanged(false)
+    setPageEnabled(settings.enabled)
   }
 
   return (
@@ -164,7 +202,18 @@ export function SettingsApp({ mode }: SettingsAppProps) {
           checked={settings.enabled}
           disabled={isLoading}
           onChange={(enabled) => void save({ enabled })}
-        />
+        >
+          {pageEnabled !== null && settings.enabled !== pageEnabled && (
+            <ReloadButton
+              title={
+                settings.enabled
+                  ? 'Reload the page to convert its prices'
+                  : 'Reload the page to remove its conversions'
+              }
+              onClick={() => void reload()}
+            />
+          )}
+        </EnableToggle>
 
         <div
           className={`space-y-3 transition ${
@@ -188,22 +237,15 @@ export function SettingsApp({ mode }: SettingsAppProps) {
             }`}
             description="Currencies detected in pages, in priority order: a currency higher in the list gets the symbols and names it shares with lower ones (crossed out, with the owner after the arrow)."
           >
-            <button
-              type="button"
+            <ReloadButton
               disabled={!sourcesChanged}
               title={
                 sourcesChanged
                   ? 'Reload the page to convert its prices with the new list'
                   : 'Change the list to enable'
               }
-              onClick={async () => {
-                await reloadPage()
-                setSourcesChanged(false)
-              }}
-              className="w-full rounded-lg border border-amber-400/60 px-2.5 py-1.5 text-xs font-medium text-amber-200 transition hover:bg-amber-400/10 disabled:border-white/15 disabled:text-stone-500 disabled:hover:bg-transparent"
-            >
-              ⟳ Reload
-            </button>
+              onClick={() => void reload()}
+            />
             <SourceCurrencyList
               codes={settings.sourceCurrencies}
               home={settings.homeCurrency}
